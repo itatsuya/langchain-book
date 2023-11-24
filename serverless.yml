@@ -1,4 +1,4 @@
-service: LangChainBook-ChatGPTSlackFunction
+service: LangChainBook-ChatGPTTeamsFunction
 frameworkVersion: '3'
 
 provider:
@@ -22,9 +22,9 @@ package:
       - '!.git/**'
 
 functions:
-    app:                                                                        
-      name: LangChainBook-ChatGPTSlackFunction-${sls:stage}-app
-      handler: app.handler                                                  
+    lambda_handler :                                                                        
+      #name: LangChainBook-ChatGPTTeamsFunction-${sls:stage}-app
+      handler: app.lambda_handler                                               
       runtime: python3.10
       memorySize: 512                                 
       timeout: 900

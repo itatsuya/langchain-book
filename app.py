@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
-from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
+#from slack_bolt import App
+#from slack_bolt.adapter.socket_mode import SocketModeHandler
 import re
 from langchain.chat_models import ChatOpenAI
 import time
@@ -13,7 +13,7 @@ from langchain.memory import MomentoChatMessageHistory
 from langchain.schema import HumanMessage, LLMResult, SystemMessage
 import json
 import logging
-from slack_bolt.adapter.aws_lambda import SlackRequestHandler
+#from slack_bolt.adapter.aws_lambda import SlackRequestHandler
 from add_document import initialize_vectorstore
 #from langchain.chains import RetrievalQA
 from langchain.chains import ConversationalRetrievalChain
@@ -25,23 +25,23 @@ load_dotenv()
 
 
 # ログ
-SlackRequestHandler.clear_all_log_handlers()
-logging.basicConfig(
-        format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO
-        )
-logger = logging.getLogger(__name__)
+#SlackRequestHandler.clear_all_log_handlers()
+#logging.basicConfig(
+#        format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO
+#        )
+#logger = logging.getLogger(__name__)
 
 
 
 # ボットトークンを使ってアプリを初期化します
-app = App(
-        signing_secret=os.environ["SLACK_SIGNING_SECRET"],
-        token=os.environ.get("SLACK_BOT_TOKEN"),
-        process_before_response=True,
-        )
+#app = App(
+#        signing_secret=os.environ["SLACK_SIGNING_SECRET"],
+#        token=os.environ.get("SLACK_BOT_TOKEN"),
+#        process_before_response=True,
+#        )
 
 
-class SlackStreamingCallbackHandler(BaseCallbackHandler):
+class TeamsStreamingCallbackHandler(BaseCallbackHandler):
     last_send_time = time.time()
     message = ""
 
@@ -58,9 +58,9 @@ class SlackStreamingCallbackHandler(BaseCallbackHandler):
         #if now - self.last_send_time > CHAT_UPDATE_INTERVAL_SEC:
         if now - self.last_send_time > self.interval:
             #self.last_send_time = now
-            app.client.chat_update(
-                    channel=self.channel, ts=self.ts, text=f"{self.message}\n\nTyyyyyyyyping..."
-                    )
+            #app.client.chat_update(
+            #        channel=self.channel, ts=self.ts, text=f"{self.message}\n\nTyyyyyyyyping..."
+            #        )
             
             self.last_send_time = now
             self.update_count += 1
@@ -77,12 +77,12 @@ class SlackStreamingCallbackHandler(BaseCallbackHandler):
                  "elements":[{"type":"mrkdwn", "text":message_context}],
                  },
                 ]
-        app.client.chat_update(
-                channel=self.channel, 
-                ts=self.ts, 
-                text=self.message,
-                block=message_blocks,
-                )
+        #app.client.chat_update(
+        #        channel=self.channel, 
+        #        ts=self.ts, 
+        #        text=self.message,
+        #        block=message_blocks,
+        #        )
 
 
 #@app.event("app_mention")
@@ -119,7 +119,7 @@ def handle_mention(event, say):
     
     vectorstore = initialize_vectorstore()
 
-    callback = SlackStreamingCallbackHandler(channel=channel, ts=ts)
+    callback = TeamsStreamingCallbackHandler(channel=channel, ts=ts)
 
     llm = ChatOpenAI(
             model_name=os.environ["OPENAI_API_MODEL"],
@@ -148,25 +148,40 @@ def handle_mention(event, say):
 def just_ack(ack):
     ack()
 
-app.event("app_mention")(ack=just_ack, lazy=[handle_mention])
+#app.event("app_mention")(ack=just_ack, lazy=[handle_mention])
 
 
 
-if __name__ == "__main__":
-    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+#if __name__ == "__main__":
+#    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
 
 
 
-def handler(event, context):
-    logger.info("handler called")
-    header = event["headers"]
-    logger.info(json.dumps(header))
+def lambda_handler(event, context):
+    
+    body = json.loads(event['body'])
+    
+    response = {
+        'type': 'message',
+        'text': f"hello!!! Mr. {body['from']['name']}. You said : {body['text']}"
+    }
+    return {
+        'statusCode': 200,
+        'body': json.dumps(response),
+        'headers':{
+            'Content-Type': 'application/json'
+        }
+    }
+    
+    #logger.info("handler called")
+    #header = event["headers"]
+    #logger.info(json.dumps(header))
 
-    if "x-slack-retry-num" in header:
-        logger.info("SKIP > x-slack-retry-num: %s", header["x-slack-retry-num"])
-        return 200
+    #if "x-slack-retry-num" in header:
+    #    logger.info("SKIP > x-slack-retry-num: %s", header["x-slack-retry-num"])
+    #    return 200
 
     #AWS Lambda環境のリクエスト情報をappが処理できるように変換してくれるアダプター
-    slack_handler = SlackRequestHandler(app=app)
+    #slack_handler = SlackRequestHandler(app=app)
     #未応答はそのままAWS Lambdaの戻り値として返せます
-    return slack_handler.handle(event, context)
+    #return slack_handler.handle(event, context)
